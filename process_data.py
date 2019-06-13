@@ -56,8 +56,19 @@ for dir_str in directories:
 
         # Save the features for this df record
         feature_file = open(filepath, "r")
-        for line in feature_file.readlines():
-            pass
+
+        # Each line is a feature name followed by comma-separated values
+        lines = feature_file.readlines()
+        for (index, line) in enumerate(lines):
+            # Strip the newline character and the feature name + colon
+            feature_name = given_features[index]
+            lines[index] = lines[index].strip(f"\n:{feature_name}")
+
+            # Now add the comma-separated values to this feature's columns
+            feature_vals = [float(f) for f in lines[index].split(",")]
+            for (j, val) in enumerate(feature_vals):
+                col = f"{feature_name}_{j}"
+                df.iloc[i][col] = val
 
         feature_file.close()
 
