@@ -38,7 +38,7 @@ df = pd.DataFrame(
     columns=columns
 )
 # Store labels separately for each df index
-labels = np.full(images_amnt, "", dtype=str)
+labels = np.full(images_amnt, "", dtype="U22")
 # df["label"] = pd.Series(0*images_amnt, dtype=int)
 
 # For each df index, remember the image and features filepaths for easy access
@@ -83,7 +83,6 @@ for dir_str in classes:
                 df.iloc[i][col] = val
 
             # Store the label in the df
-            # df["label"][i] = dir_str
             labels[i] = dir_str
 
         feature_file.close()
@@ -91,13 +90,24 @@ for dir_str in classes:
         i += 1
 print(f"Done extracting features!")
 
-# Store the dataframe as a pickle file to save time in the future
-pickle_file = open("feature_df.pickle", "w")
-pickle.dump(df, pickle_file)
-pickle_file.close()
+# Store the df, labels, and index conversions as pickle files to save time
+df.to_pickle("./feature_df.pickle")
+data_pkl_filename = "labels_and_index_conversions.pickle"
+data_pickle_file = open(data_pkl_filename, "wb")
+pickle.dump(
+    (labels, df_index_to_feature_filepath, df_index_to_img_filepath),
+    data_pickle_file
+)
+data_pickle_file.close()
 
 
-def load_feature_df_from_pickle():
-    pickle_file = open("feature_df.pickle", "r")
-    df = pickle.load(pickle_file)
-    pickle_file.close()
+def load_feature_df_and_relevant_data_from_pickles():
+    feature_df = pd.read_pickle("./feature_df.pickle")
+
+    data_pkl_filename = "labels_and_index_conversions.pickle"
+    data_pickle_file = open(data_pkl_filename, "rb")
+    (labels, index_to_feature_path, index_to_img_path) = \
+        pickle.load(data_pickle_file)
+    data_pickle_file.close()
+
+    return (feature_df, labels, index_to_feature_path, index_to_img_path)
