@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 import os
+import pickle
 
 # Build a DataFrame containing all images' features
 classes = [
@@ -27,35 +28,46 @@ feature_column_amnts = {
 features_amnt = sum(feature_column_amnts.values())
 
 # Create the required column names for the DataFrame
-columns = [f"{col}_{i}"
-           for i in range(feature_column_amnts[col])
-           for col in given_features]
-columns.append("label")  # Save the class label
-columns.append("filepath")  # Save the image filepath for each row
+columns = []
+for col in given_features:
+    for i in range(feature_column_amnts[col]):
+        columns.append(f"{col}_{i}")
 
 df = pd.DataFrame(
     np.zeros((images_amnt, features_amnt), dtype=float),
     columns=columns
 )
-df_index_to_filepath = {}
+# Store labels separately for each df index
+labels = np.full(images_amnt, "", dtype=str)
+# df["label"] = pd.Series(0*images_amnt, dtype=int)
+
+# For each df index, remember the image and features filepaths for easy access
+df_index_to_feature_filepath = {}
+df_index_to_img_filepath = {}
 
 # Iterate over all images' feature files in each class directory and add them
 # to the df.
 i = 0  # Keep track of the current df index
-directories = [f"./data/Medico_2018_development_set_features/{dirname}"
-               for dirname
-               in classes]
-for dir_str in directories:
-    directory = os.fsencode(dir_str)
+for dir_str in classes:
+    # Define full paths so we can store them later
+    full_feature_dir = f"./data/Medico_2018_development_set_features/{dir_str}"
+    full_img_dir = f"./data/Medico_2018_development_set/{dir_str}"
+
+    # Work with the feature dir for extraction
+    directory = os.fsencode(full_feature_dir)
 
     for file in os.listdir(directory):
-        # Save the filepath for this df index
+        print(f"Extracting features for image {i}/{images_amnt}...")
+
+        # Save the relevant filepaths for this df index
         filename = os.fsdecode(file)
-        filepath = f"{dir_str}/{filename}"
-        df_index_to_filepath[i] = filepath
+        feature_filepath = f"{full_feature_dir}/{filename}"
+        img_filepath = f"{full_img_dir}/{filename}"
+        df_index_to_feature_filepath[i] = feature_filepath
+        df_index_to_img_filepath[i] = img_filepath
 
         # Save the features for this df record
-        feature_file = open(filepath, "r")
+        feature_file = open(feature_filepath, "r")
 
         # Each line is a feature name followed by comma-separated values
         lines = feature_file.readlines()
@@ -64,12 +76,28 @@ for dir_str in directories:
             feature_name = given_features[index]
             lines[index] = lines[index].strip(f"\n:{feature_name}")
 
-            # Now add the comma-separated values to this feature's columns
+            # Add the comma-separated values to this feature's columns
             feature_vals = [float(f) for f in lines[index].split(",")]
             for (j, val) in enumerate(feature_vals):
                 col = f"{feature_name}_{j}"
                 df.iloc[i][col] = val
 
+            # Store the label in the df
+            # df["label"][i] = dir_str
+            labels[i] = dir_str
+
         feature_file.close()
 
         i += 1
+print(f"Done extracting features!")
+
+# Store the dataframe as a pickle file to save time in the future
+pickle_file = open("feature_df.pickle", "w")
+pickle.dump(df, pickle_file)
+pickle_file.close()
+
+
+def load_feature_df_from_pickle():
+    pickle_file = open("feature_df.pickle", "r")
+    df = pickle.load(pickle_file)
+    pickle_file.close()
