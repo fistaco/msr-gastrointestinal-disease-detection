@@ -3,7 +3,7 @@ import pandas as pd
 import os
 import pickle
 
-# Build a DataFrame containing all images' features
+# Define image classes for which we'll import precomputed features
 classes = [
     "blurry-nothing", "dyed-lifted-polyps", "esophagitis","normal-cecum",
     "normal-z-line", "polyps", "retroflex-stomach", "stool-plenty",
