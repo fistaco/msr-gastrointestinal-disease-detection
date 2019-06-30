@@ -2,7 +2,6 @@ import pickle
 
 import pandas as pd
 
-
 # Define dictionaries to map labels to numeric values and the other way around
 label_strings = [
     'blurry-nothing', 'colon-clear', 'dyed-lifted-polyps',

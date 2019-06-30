@@ -1,11 +1,12 @@
-import numpy as np
-import pandas as pd
 import os
 import pickle
 
+import numpy as np
+import pandas as pd
+
 # Define image classes for which we'll import precomputed features
 classes = [
-    "blurry-nothing", "dyed-lifted-polyps", "esophagitis","normal-cecum",
+    "blurry-nothing", "dyed-lifted-polyps", "esophagitis", "normal-cecum",
     "normal-z-line", "polyps", "retroflex-stomach", "stool-plenty",
     "colon-clear", "dyed-resection-margins", "instruments", "normal-pylorus",
     "out-of-patient", "retroflex-rectum", "stool-inclusions",
@@ -39,7 +40,6 @@ df = pd.DataFrame(
 )
 # Store labels separately for each df index
 labels = np.full(images_amnt, "", dtype="U22")
-# df["label"] = pd.Series(0*images_amnt, dtype=int)
 
 # For each df index, remember the image and features filepaths for easy access
 df_index_to_feature_filepath = {}
