@@ -89,3 +89,59 @@ def append_hist_features(df, img_index, hist, color_space):
         df.loc[img_index, column] = bin_val
 
     return df
+
+
+def compute_and_append_local_binary_patterns_features(rgb_img, img_index, df):
+    img = cv2.cvtColor(bgr_img, cv2.COLOR_BGR2GRAY)
+
+    # Define limits for our iteration over 16x16 pixel blocks
+    block_size = 16  # Amount of pixels in a block in both dimensions
+    (x_bound, y_bound) = (img.shape[0], img.shape[1])
+
+    # Iterate over each pixel block to obtain a full LBP feature vector
+    for i in range(0, x_bound, block_size):
+        for j in range(0, y_bound, block_size):
+            cell = img[i:i + 16, j:j + 16]  # Define 16x16 cell
+
+            # Compute a LBP for each pixel in the cell
+            for x in range(cell.shape[0]):
+                for y in range(cell.shape[1]):
+                    pix = cell[x, y]
+
+
+def compute_local_binary_pattern(cell, x, y, x_bound, y_bound, radius=3):
+    # Store occurrence coutns of each possible "comparison byte"
+    lbp_hist = np.zeros(256, dtype=int)
+
+    centre_val = cell[x, y]
+
+    # Define the 8 neighbour indices
+    r = radius
+    nb_locations = [(x + i, y + j) for i in [-r, 0, r] for j in [-r, 0, r]]
+    nb_locations.remove((x, y))
+
+    # Define a "comparison byte" based on the centre value being larger or
+    # smaller than each of its 8 neighbours.
+    comp_byte = 0
+    for (i, nb_loc) in enumerate(nb_locations):
+        shift = 8 - i - 1  # Start from the left side of the byte
+
+        # Treat a value as smaller than ours if it's out of bounds
+        nb_out_of_bounds = \
+            nb_loc[0] >= x_bound or nb_loc[1] >= y_bound or \
+            nb_loc[0] < 0 or nb_loc[1] < 0
+        if nb_out_of_bounds:
+            comp_byte &= (1 << shift)
+            continue
+
+        # Write 0 if the centre value is larger, write 1 otherwise. Use bitwise
+        # operators to improve performance. Recall that each bit is initialised
+        # at 0, so we only have to check if centre_val <= nv_val.
+        nb_val = cell[nb_loc[0], nb_loc[1]]
+        if centre_val <= nb_val:
+            comp_byte &= (1 << shift)
+
+        # Increment the occurrence count of the "number" we just computed
+        lbp_hist[comp_byte] += 1
+
+    return lbp_hist
