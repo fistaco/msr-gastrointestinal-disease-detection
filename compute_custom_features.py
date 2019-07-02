@@ -19,7 +19,8 @@ classes = [
 
 def compute_custom_features(df, index_to_img_path_dict):
     feature_computation_funcs = [
-        compute_and_append_histogram_features
+        # compute_and_append_histogram_features,
+        compute_and_append_local_binary_patterns_features
     ]
 
     # Iterate over each img in the df to find its filepath
@@ -93,7 +94,7 @@ def append_hist_features(df, img_index, hist, color_space):
     return df
 
 
-def compute_and_append_local_binary_patterns_features(rgb_img, img_index, df):
+def compute_and_append_local_binary_patterns_features(bgr_img, img_index, df):
     img = cv2.cvtColor(bgr_img, cv2.COLOR_BGR2GRAY)
 
     # Define limits for our iteration over 16x16 pixel blocks
@@ -101,42 +102,51 @@ def compute_and_append_local_binary_patterns_features(rgb_img, img_index, df):
     (x_bound, y_bound) = (img.shape[0], img.shape[1])
 
     # The full LBP histogram is a concatenation of all cells' LBP histograms
-    amnt_cells = x_bound//block_size + 1 + y_bound//block_size + 1
-    full_lbp_hist = np.zeros(amnt_cells)
+    amnt_cells = (x_bound//block_size + 1) * (y_bound//block_size + 1)
+    full_lbp_hist = np.zeros(amnt_cells * 256)
     full_lbp_idx = 0  # Track where we're adding cell histograms
 
     # Iterate over each pixel block to obtain a full LBP feature vector
+    print("Computing LBP histograms for all cells...")
     for i in range(0, x_bound, block_size):
         for j in range(0, y_bound, block_size):
-            cell = img[i:i + block_size, j:j + block_size]
+            cell = img[i:(i + block_size), j:(j + block_size)]
+
+            # Store occurrence counts of each possible 8-bit pattern
+            cell_lbp_hist = np.zeros(256)
 
             # Compute a LBP for each pixel in the cell
             for x in range(cell.shape[0]):
                 for y in range(cell.shape[1]):
-                    lbp_hist = compute_lbp_hist(cell, x, y, bound=block_size)
+                    lbp = compute_local_binary_pattern(cell, x, y)
 
-                    # Append computed histogram to the full lbp hist
-                    full_lbp_hist[full_lbp_idx:full_lbp_idx + 256] = lbp_hist
-                    full_lbp_idx += 256
+                    cell_lbp_hist[lbp] += 1
+
+            # Append the computed cell lbp histogram to the full lbp hist
+            full_lbp_hist[full_lbp_idx:(full_lbp_idx + 256)] = cell_lbp_hist
+            full_lbp_idx += 256
 
     # Set the features in the df
+    print(f"Appending features to the df...")
     for (i, hist_val) in enumerate(full_lbp_hist):
         column = f"LBP_{i}"
+        print(i)
         df.loc[img_index, column] = hist_val
 
     return df
 
 
-def compute_lbp_hist(cell, x, y, bound, radius=3):
-    # Store occurrence counts of each possible "comparison byte"
-    lbp_hist = np.zeros(256)
-
+def compute_local_binary_pattern(cell, x, y, radius=3):
     centre_val = cell[x, y]
 
     # Define the 8 neighbour indices
     r = radius
     nb_locations = [(x + i, y + j) for i in [-r, 0, r] for j in [-r, 0, r]]
     nb_locations.remove((x, y))
+
+    # Define cell boundaries based on its shape
+    x_bound = cell.shape[0]
+    y_bound = cell.shape[1]
 
     # Define a "comparison byte" based on the centre value being larger or
     # smaller than each of its 8 neighbours.
@@ -146,7 +156,7 @@ def compute_lbp_hist(cell, x, y, bound, radius=3):
 
         # Treat a value as smaller than ours if it's out of bounds
         nb_out_of_bounds = \
-            nb_loc[0] >= block_bound or nb_loc[1] >= block_bound or \
+            nb_loc[0] >= x_bound or nb_loc[1] >= y_bound or \
             nb_loc[0] < 0 or nb_loc[1] < 0
         if nb_out_of_bounds:
             comp_byte &= (1 << shift)
@@ -159,10 +169,7 @@ def compute_lbp_hist(cell, x, y, bound, radius=3):
         if centre_val <= nb_val:
             comp_byte &= (1 << shift)
 
-        # Increment the occurrence count of the "number" we just computed
-        lbp_hist[comp_byte] += 1
-
-    return lbp_hist
+    return comp_byte
 
 
 if __name__ == "__main__":
@@ -170,4 +177,4 @@ if __name__ == "__main__":
         load_feature_df_and_relevant_data_from_pickles()
 
     df = compute_custom_features(df, df_index_to_img_path)
-    df.to_pickle("./feature_df_plus_color_hist_features.pickle")
+    df.to_pickle("./feature_df_plus_color_hist_and_lbp_features.pickle")

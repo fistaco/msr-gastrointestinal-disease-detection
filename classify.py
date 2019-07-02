@@ -4,7 +4,7 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression, SGDClassifier
 from sklearn.metrics import (accuracy_score, confusion_matrix, f1_score,
                              precision_score, recall_score, roc_auc_score,
-                             roc_curve)
+                             roc_curve, matthews_corrcoef)
 from sklearn.model_selection import train_test_split
 from sklearn.svm import LinearSVC
 
