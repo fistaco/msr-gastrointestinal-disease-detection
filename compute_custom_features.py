@@ -5,6 +5,8 @@ import cv2
 import numpy as np
 import pandas as pd
 
+from helpers import *
+
 # Define class strings to iterate over all image directories
 classes = [
     "blurry-nothing", "dyed-lifted-polyps", "esophagitis", "normal-cecum",
@@ -15,7 +17,7 @@ classes = [
 ]
 
 
-def compute_custom_features(df, index_to_img_path):
+def compute_custom_features(df, index_to_img_path_dict):
     feature_computation_funcs = [
         compute_and_append_histogram_features
     ]
@@ -26,7 +28,7 @@ def compute_custom_features(df, index_to_img_path):
         print(f"Computing features for image {i}/{total_imgs}")
 
         # Load image with openCV2
-        img_path = index_to_img_path[i]
+        img_path = index_to_img_path_dict[i]
         img = cv2.imread(img_path)  # Img is loaded as a 3D pixel BGR matrix
 
         # Compute all features for this image and add them to the df
@@ -58,8 +60,8 @@ def compute_and_append_histogram_features(img, img_index, df):
         img, cv2.COLOR_BGR2YCrCb, ycrcb_channels, ycrcb_bins, ycrcb_ranges)
 
     # Append both histograms' values to the df as features
-    df = df.append_hist_features(df, img_index, hsv_hist, "HSV")
-    df = df.append_hist_features(df, img_index, ycrcb_hist, "YCrCb")
+    df = append_hist_features(df, img_index, hsv_hist, "HSV")
+    df = append_hist_features(df, img_index, ycrcb_hist, "YCrCb")
 
     return df
 
@@ -161,3 +163,11 @@ def compute_lbp_hist(cell, x, y, bound, radius=3):
         lbp_hist[comp_byte] += 1
 
     return lbp_hist
+
+
+if __name__ == "__main__":
+    (df, labels, df_index_to_feature_path, df_index_to_img_path) = \
+        load_feature_df_and_relevant_data_from_pickles()
+
+    df = compute_custom_features(df, df_index_to_img_path)
+    df.to_pickle("./feature_df_plus_color_hist_features.pickle")

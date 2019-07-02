@@ -62,7 +62,7 @@ for dir_str in classes:
         # Save the relevant filepaths for this df index
         filename = os.fsdecode(file)
         feature_filepath = f"{full_feature_dir}/{filename}"
-        img_filepath = f"{full_img_dir}/{filename}"
+        img_filepath = f"{full_img_dir}/{filename.strip('features')}jpg"
         df_index_to_feature_filepath[i] = feature_filepath
         df_index_to_img_filepath[i] = img_filepath
 

@@ -5,7 +5,7 @@ import pandas as pd
 # Define dictionaries to map labels to numeric values and the other way around
 label_strings = [
     'blurry-nothing', 'colon-clear', 'dyed-lifted-polyps',
-    'dyed-resection-margins', 'esophagitis', 'instruments','normal-cecum',
+    'dyed-resection-margins', 'esophagitis', 'instruments', 'normal-cecum',
     'normal-pylorus', 'normal-z-line', 'out-of-patient', 'polyps',
     'retroflex-rectum', 'retroflex-stomach', 'stool-inclusions',
     'stool-plenty', 'ulcerative-colitis'
